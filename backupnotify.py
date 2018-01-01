@@ -74,6 +74,8 @@ def basename(fullpath):
 
 def gather_data(dir_to_scan, days):
     data = {}
+    if not os.path.isdir(dir_to_scan):
+        raise Exception("Invalid directory to scan: %s" % dir_to_scan)
     outdated_dirs = [x for x in glob.glob(os.path.join(dir_to_scan, '*')) if is_outdated(x, days)]
     for dir in outdated_dirs:
         if len(os.listdir(dir)) < 1:
@@ -117,6 +119,7 @@ def main(args):
     msg.attach(MIMEText(html, 'html'))
     srv = smtplib.SMTP('localhost')
     srv.sendmail("chat@bluezonepc.com", "coandco@gmail.com", msg.as_string())
+    srv.quit()
 
 
 if __name__ == "__main__":
