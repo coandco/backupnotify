@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 
 SEC_IN_MIN = 60
 MIN_IN_HOUR = 60
-HOUR_IN_DAY = 24
+HOURS_IN_DAY = 24
 
 TEMPLATES = {'htmlemail': """
 <p><h3>Outdated backups</h3></p> 
@@ -28,9 +28,13 @@ TEMPLATES = {'htmlemail': """
 {% for dirname in data.keys() %}
   <p><h3>{{dirname|basename}}</h3></p>
   <table>
-  {%- for fileinfo in data[dirname] %}
+  {%- if data[dirname]|length > 0 -%}
+    {%- for fileinfo in data[dirname] %}
     <tr><td>{{fileinfo['name']}}</td><td>{{fileinfo['size']|humansize}}</td><td>{{fileinfo['date']|timeago}}</td></tr>
-  {%- endfor %}
+    {%- endfor %}
+  {%- else %}
+    &lt;empty directory&gt;<br />
+  {%- endif -%}
   </table>
 {%- endfor -%}
 """,
@@ -46,18 +50,24 @@ TEMPLATES = {'htmlemail': """
 
 {% for dirname in data.keys() %}
   ---{{dirname|basename}}---
-  {%- for fileinfo in data[dirname] %}
+  {%- if data[dirname]|length > 0 -%}
+    {%- for fileinfo in data[dirname] %}
     {{fileinfo['name']}}, {{fileinfo['size']|humansize}}, {{fileinfo['date']|timeago}}
-  {%- endfor %}
+    {%- endfor %}
+  {%- else %}
+    <empty directory>
+  {% endif -%}
 {%- endfor -%}"""}
 
 
 def is_outdated(dir, days):
-    if not os.path.isdir(dir) or len(os.listdir(dir)) < 1:
+    if not os.path.isdir(dir):
         return False
+    if len(os.listdir(dir)) < 1:
+        return True
     files = glob.glob(os.path.join(dir, '*'))
     latest_file = max(files, key=os.path.getmtime)
-    return time.time() - os.path.getmtime(latest_file) > (days * SEC_IN_MIN * MIN_IN_HOUR * HOUR_IN_DAY)
+    return time.time() - os.path.getmtime(latest_file) > (days * HOURS_IN_DAY * MIN_IN_HOUR * SEC_IN_MIN)
 
 
 def fmt_timeago(timestamp):
@@ -79,7 +89,7 @@ def gather_data(dir_to_scan, days):
     outdated_dirs = [x for x in glob.glob(os.path.join(dir_to_scan, '*')) if is_outdated(x, days)]
     for dir in outdated_dirs:
         if len(os.listdir(dir)) < 1:
-            continue
+            data[dir] = []
         data[dir] = sorted([{'name': x, 'date': os.path.getmtime(x), 'humandate': fmt_timeago(os.path.getmtime(x)),
                              'size': os.path.getsize(x), 'humansize': fmt_humansize(os.path.getsize(x))}
                             for x in glob.glob(os.path.join(dir, '*'))], key=lambda k: k['date'], reverse=True)[:5]
@@ -101,8 +111,8 @@ def render(data, age_list):
 
 def main(args):
     data = gather_data(args["dir"], args["age"])
-    sorted_dirs = sorted([(x, data[x][0]['date'], data[x][0]['humandate']) for x in data.keys()],
-                         key=lambda k: k[1])
+    sorted_dirs = sorted([(x, data[x][0]['date'], data[x][0]['humandate']) if len(data[x]) > 0 else (x, 0, 'never')
+                          for x in data.keys()], key=lambda k: k[1])
     age_list = []
     for item in sorted_dirs:
         if len(age_list) == 0 or age_list[-1][0] != item[2]:
