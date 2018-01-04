@@ -66,13 +66,21 @@ TEMPLATES = {'htmlemail': """
 {%- endfor -%}"""}
 
 
+def fname_to_epoch(filename):
+    try:
+        return time.mktime(datetime.datetime.strptime(os.path.basename(filename.split("_", 1)[0]),
+                                                      "%Y-%m-%d").timetuple())
+    except ValueError:
+        return 0.0
+
+
 def is_outdated(dir, days):
     if not os.path.isdir(dir):
         return False
     if len(os.listdir(dir)) < 1:
         return True
     files = glob.glob(os.path.join(dir, '*'))
-    latest_file = max(files, key=os.path.getmtime)
+    latest_file = max(files, key=fname_to_epoch)
     return time.time() - os.path.getmtime(latest_file) > (days * HOURS_IN_DAY * MIN_IN_HOUR * SEC_IN_MIN)
 
 
@@ -96,9 +104,10 @@ def gather_data(dir_to_scan, days):
     for dir in outdated_dirs:
         if len(os.listdir(dir)) < 1:
             data[dir] = []
-        data[dir] = sorted([{'name': x, 'date': os.path.getmtime(x), 'humandate': fmt_timeago(os.path.getmtime(x)),
+        data[dir] = sorted([{'name': x, 'date': fname_to_epoch(x), 'humandate': fmt_timeago(fname_to_epoch(x)),
                              'size': os.path.getsize(x), 'humansize': fmt_humansize(os.path.getsize(x))}
-                            for x in glob.glob(os.path.join(dir, '*'))], key=lambda k: k['date'], reverse=True)[:5]
+                            for x in glob.glob(os.path.join(dir, '*')) if fname_to_epoch(x) != 0.0],
+                           key=lambda k: k['date'], reverse=True)[:5]
     return data
 
 
@@ -150,3 +159,4 @@ if __name__ == "__main__":
                            help="The email address to send reports from")
     parsed_args = vars(cmdParser.parse_args())
     main(parsed_args)
+
