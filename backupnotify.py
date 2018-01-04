@@ -128,7 +128,7 @@ def main(args):
     msg.attach(MIMEText(text, 'plain'))
     msg.attach(MIMEText(html, 'html'))
     srv = smtplib.SMTP('localhost')
-    srv.sendmail("chat@bluezonepc.com", "coandco@gmail.com", msg.as_string())
+    srv.sendmail(msg['From'], msg['To'], msg.as_string())
     srv.quit()
 
 
