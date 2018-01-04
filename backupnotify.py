@@ -18,6 +18,7 @@ HOURS_IN_DAY = 24
 
 TEMPLATES = {'htmlemail': """
 <p><h3>Outdated backups on {{hostname}}</h3></p>
+<div style="margin-left: 5%">
 {% for age in age_list -%}
 {%- set comma = joiner(", ") -%}
   Last updated {{age[0]}}:{{" "}}
@@ -26,9 +27,11 @@ TEMPLATES = {'htmlemail': """
   {%- endfor -%}
   <br />
 {% endfor -%}
+</div>
 
 {% for dirname in data.keys() %}
   <p><h3>{{dirname|basename}}</h3></p>
+  <div style="margin-left: 5%">
   <table>
   {%- if data[dirname]|length > 0 -%}
     {%- for fileinfo in data[dirname] %}
@@ -38,6 +41,7 @@ TEMPLATES = {'htmlemail': """
     &lt;empty directory&gt;<br />
   {%- endif -%}
   </table>
+  </div>
 {%- endfor -%}
 """,
 'textemail': """
