@@ -7,6 +7,7 @@ import humanize
 import datetime
 import jinja2
 import smtplib
+from socket import gethostname
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -16,7 +17,7 @@ MIN_IN_HOUR = 60
 HOURS_IN_DAY = 24
 
 TEMPLATES = {'htmlemail': """
-<p><h3>Outdated backups</h3></p> 
+<p><h3>Outdated backups on {{hostname}}</h3></p>
 {% for age in age_list -%}
 {%- set comma = joiner(", ") -%}
   Last updated {{age[0]}}:{{" "}}
@@ -40,7 +41,7 @@ TEMPLATES = {'htmlemail': """
 {%- endfor -%}
 """,
 'textemail': """
----Outdated backups--- 
+---Outdated backups on {{hostname}}---
 {% for age in age_list -%}
 {%- set comma = joiner(", ") -%}
   Last updated {{age[0]}}:{{" "}}
@@ -97,16 +98,16 @@ def gather_data(dir_to_scan, days):
     return data
 
 
-def render(data, age_list):
+def render(data, age_list, hostname):
     loader = jinja2.DictLoader(mapping=TEMPLATES)
     jenv = jinja2.Environment(loader=loader)
     jenv.filters['timeago'] = fmt_timeago
     jenv.filters['humansize'] = fmt_humansize
     jenv.filters['basename'] = basename
     template = jenv.get_template("htmlemail")
-    html = template.render({"data": data, "age_list": age_list})
+    html = template.render({"data": data, "age_list": age_list, "hostname": hostname})
     template = jenv.get_template("textemail")
-    text = template.render({"data": data, "age_list": age_list})
+    text = template.render({"data": data, "age_list": age_list, "hostname": hostname})
     return html, text
 
 
@@ -119,11 +120,11 @@ def main(args):
         if len(age_list) == 0 or age_list[-1][0] != item[2]:
             age_list.append((item[2], []))
         age_list[-1][1].append(item[0])
-    html, text = render(data, age_list)
+    html, text = render(data, age_list, gethostname())
     #print("html: %s" % html)
     #print("text: %s" % text)
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = "Backups out of date"
+    msg['Subject'] = "Backups out of date on %s" % gethostname()
     msg['From'] = args["from"]
     msg['To'] = args["to"]
     msg.attach(MIMEText(text, 'plain'))
