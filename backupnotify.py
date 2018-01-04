@@ -137,7 +137,7 @@ if __name__ == "__main__":
     cmdParser = argparse.ArgumentParser(prog="backupnotify.py")
     cmdParser.add_argument("-d", "--dir", required=True,
                            help="The directory to scan for backups")
-    cmdParser.add_argument("-a", "--age", default=1,
+    cmdParser.add_argument("-a", "--age", type=int, default=1,
                            help="Alert when no backups newer than X days are present")
     cmdParser.add_argument('-t', '--to', required=True,
                            help="The email address to send reports to")
