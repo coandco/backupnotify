@@ -69,7 +69,7 @@ TEMPLATES = {'htmlemail': """
 def fname_to_epoch(filename):
     try:
         return time.mktime(datetime.datetime.strptime(os.path.basename(filename.split("_", 1)[0]),
-                                                      "%Y-%m-%d").timetuple())
+                                                      "%Y-%d-%m").timetuple())
     except ValueError:
         return 0.0
 
