@@ -81,7 +81,7 @@ def is_outdated(dir, days):
         return True
     files = glob.glob(os.path.join(dir, '*'))
     latest_file = max(files, key=fname_to_epoch)
-    return time.time() - os.path.getmtime(latest_file) > (days * HOURS_IN_DAY * MIN_IN_HOUR * SEC_IN_MIN)
+    return time.time() - fname_to_epoch(latest_file) > (days * HOURS_IN_DAY * MIN_IN_HOUR * SEC_IN_MIN)
 
 
 def fmt_timeago(timestamp):
